@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Більше число</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      background: #f2f6fc;
+      color: #15243b;
+      font-family: system-ui, sans-serif;
+      isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      z-index: -1;
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    body::before {
+      left: 0;
+      background-image: url("left.jpg");
+    }
+
+    body::after {
+      right: 0;
+      background-image: url("right.png");
+    }
+
+    main {
+      width: min(100%, 760px);
+      text-align: center;
+      background: rgba(242, 246, 252, 0.91);
+      padding: clamp(16px, 4vw, 32px);
+      border-radius: 24px;
+      box-shadow: 0 16px 48px #0003;
+    }
+
+    h1 {
+      font-size: clamp(28px, 6vw, 42px);
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 24px;
+      margin: 28px 0;
+    }
+
+    .player {
+      background: white;
+      padding: 24px 16px;
+      border-radius: 20px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .score {
+      background: #4ca9e8;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .number {
+      width: min(100%, 150px);
+      aspect-ratio: 1;
+      margin: 20px auto 0;
+      display: grid;
+      place-items: center;
+      border: 3px solid #15243b;
+      border-radius: 50%;
+      background: #ffff52;
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 14px 24px;
+      border: 0;
+      border-radius: 12px;
+      background: #71f344;
+      color: #12240c;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #1557d5;
+      outline-offset: 4px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    #restart {
+      background: #dce6f7;
+      color: #15243b;
+    }
+
+    #status {
+      min-height: 3em;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 420px) {
+      .game {
+        gap: 12px;
+      }
+
+      .player {
+        padding: 18px 10px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Більше число</h1>
+
+    <p>
+      Ти проти комп’ютера.
+      Хто першим набере 3 бали — переможе!
+    </p>
+
+    <div class="game">
+      <section class="player">
+        <h2 id="name">Гравець</h2>
+
+        <div class="score">
+          Бали: <span id="user-score">0</span>
+        </div>
+
+        <div
+          class="number"
+          id="user-number"
+          aria-label="Число гравця"
+        >—</div>
+      </section>
+
+      <section class="player">
+        <h2>Комп’ютер</h2>
+
+        <div class="score">
+          Бали: <span id="computer-score">0</span>
+        </div>
+
+        <div
+          class="number"
+          id="computer-number"
+          aria-label="Число комп’ютера"
+        >—</div>
+      </section>
+    </div>
+
+    <div class="actions">
+      <button id="generate" type="button">
+        Згенерувати числа
+      </button>
+
+      <button id="restart" type="button">
+        Нова гра
+      </button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite">
+      Числа від 1 до 10. За нічиєї бали не нараховуються.
+    </p>
+  </main>
+
+  <script>
+    'use strict';
+
+    const nameElement = document.getElementById('name');
+    const userScoreElement = document.getElementById('user-score');
+    const computerScoreElement = document.getElementById('computer-score');
+    const userNumberElement = document.getElementById('user-number');
+    const computerNumberElement = document.getElementById('computer-number');
+    const generateButton = document.getElementById('generate');
+    const restartButton = document.getElementById('restart');
+    const statusElement = document.getElementById('status');
+
+    let userScore = 0;
+    let computerScore = 0;
+    let finished = false;
+
+    function askName() {
+      while (true) {
+        const value = prompt('Введи ім’я (від 1 до 30 символів):');
+
+        if (value === null) {
+          return 'Гравець';
+        }
+
+        const name = value.trim();
+
+        if (
+          name.length >= 1 &&
+          name.length <= 30 &&
+          /\p{L}/u.test(name)
+        ) {
+          return name;
+        }
+
+        alert(
+          'Ім’я має містити від 1 до 30 символів ' +
+          'і хоча б одну літеру.'
+        );
+      }
+    }
+
+    function randomNumber() {
+      return Math.floor(Math.random() * 10) + 1;
+    }
+
+    nameElement.textContent = askName();
+
+    generateButton.addEventListener('click', () => {
+      if (finished) {
+        return;
+      }
+
+      const userNumber = randomNumber();
+      const computerNumber = randomNumber();
+
+      userNumberElement.textContent = userNumber;
+      computerNumberElement.textContent = computerNumber;
+
+      if (userNumber > computerNumber) {
+        userScore++;
+        statusElement.textContent =
+          'Твоє число більше. Ти отримуєш бал!';
+      } else if (computerNumber > userNumber) {
+        computerScore++;
+        statusElement.textContent =
+          'Число комп’ютера більше. Він отримує бал.';
+      } else {
+        statusElement.textContent =
+          'Нічия! Бали не змінюються. Спробуй ще раз.';
+      }
+
+      userScoreElement.textContent = userScore;
+      computerScoreElement.textContent = computerScore;
+
+      if (userScore === 3 || computerScore === 3) {
+        finished = true;
+        generateButton.disabled = true;
+
+        if (userScore === 3) {
+          statusElement.textContent =
+            `${nameElement.textContent}, ти переміг! ` +
+            `Рахунок ${userScore}:${computerScore}.`;
+        } else {
+          statusElement.textContent =
+            'Переміг комп’ютер. ' +
+            `Рахунок ${userScore}:${computerScore}.`;
+        }
+      }
+    });
+
+    restartButton.addEventListener('click', () => {
+      userScore = 0;
+      computerScore = 0;
+      finished = false;
+
+      userScoreElement.textContent = '0';
+      computerScoreElement.textContent = '0';
+      userNumberElement.textContent = '—';
+      computerNumberElement.textContent = '—';
+
+      generateButton.disabled = false;
+      statusElement.textContent =
+        'Нову гру розпочато. Згенеруй числа!';
+    });
+  </script>
+</body>
+</html>
